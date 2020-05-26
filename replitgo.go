@@ -46,7 +46,7 @@ func GetToken(id string, key string) (string, error){
 		return "", err
 
 	}
-	return string(body),nil
+	return strings.Trim(string(body),"\""),nil
 }
 
 //GetURL Gets the websocket connection URL for a given token, host, and port.
