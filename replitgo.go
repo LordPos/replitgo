@@ -17,17 +17,17 @@ import(
 )
 
 //GetJSON : Gets the JSON data for a repl, including repl ID, URL, and some other useful info.
-func GetJSON(user string, repl string) (interface{}, error){
+func GetJSON(user string, repl string) (map[string]interface{}, error){
 
 	resp, err := http.Get("https://repl.it/data/repls/@"+user+"/"+repl)
 	if err != nil{
-		return false, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil{
-		return false, err
+		return nil, err
 	}
 	var finaljson map[string]interface{}
 	json.Unmarshal(body, &finaljson) 
