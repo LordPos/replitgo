@@ -36,7 +36,7 @@ func GetJSON(user string, repl string) (map[string]interface{}, error){
 
 //GetToken : Given a repl ID and an API key, get a one-time token for that repl.
 func GetToken(id string, key string) (string, error){
-	
+	fmt.Println("{ \"apiKey\":\""+key+"\" }")
 	resp, err := http.Post("https://repl.it/api/v0/repls/"+id+"/token", "application/json", strings.NewReader("{ \"apiKey\":\""+key+"\" }"))
 	if err != nil{
 		return "", err
