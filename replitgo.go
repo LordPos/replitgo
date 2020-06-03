@@ -13,6 +13,7 @@ import(
 	"github.com/golang/protobuf/proto"
 	"errors"
 	"strings"
+	"fmt"
 	
 )
 
@@ -56,6 +57,46 @@ func GetURL(token, host, port string, secure bool) string{
 	if secure { k = "s" }
 	return "ws" + k + "://" + host + ":" + port + "/wsv2/" + token
 }
+type Exec = api.Exec
+type Chat = api.ChatMessage
+type File = api.File
+type Move = api.Move
+type Eval = api.Command_Eval
+type FileOp struct{
+	Op string
+	File File
+}
+func makeBody(b interface{}) api.IsCommand_Body {
+	if c,ok := b.(Exec); ok{
+		return &api.Command_Exec{Exec : &c}
+	}
+	if c,ok := b.(Chat); ok{
+		return &api.Command_ChatMessage{ChatMessage : &c}
+	}
+	if c,ok := b.(Move); ok{
+		return &api.Command_Move{Move : &c}
+	}
+	if c,ok := b.(Eval); ok{
+		return &c
+	}
+	if c,ok := b.(FileOp); ok{
+		switch c.Op{
+		case "read":
+			return &api.Command_Read{Read : &c.File}
+		case "write":
+			return &api.Command_Write{Write : &c.File}
+		case "remove":
+			return &api.Command_Remove{Remove : &c.File}
+		case "tryremove":
+			return &api.Command_TryRemove{TryRemove : &c.File}
+		case "mkdir":
+			return &api.Command_Mkdir{Mkdir : &c.File}
+		case "readdir":
+			return &api.Command_Readdir{Readdir : &c.File}
+		}
+	}
+	return nil
+}
 
 type channel struct {
 	id int32
@@ -64,14 +105,13 @@ type channel struct {
 	ws *websocket.Conn
 }
 
-func (c *channel) Send(data map[string]interface{}) ([]api.Command,error) {
+func (c *channel) Send(data interface{}) ([]api.Command,error) {
 	var cmd api.Command
 	cmd.Session = 0
-	dat,_ := json.Marshal(data)
-	jsonpb.UnmarshalString(string(dat), &cmd)
 	cmd.Channel = c.id
-
-	ndata := cmd.String()
+	cmd.Body = makeBody(data)
+	fmt.Println(cmd)
+	ndata,_ := proto.Marshal(&cmd)
 	websocket.Message.Send(c.ws,ndata)
 
 	var got []api.Command
@@ -95,21 +135,20 @@ func (c *channel) Send(data map[string]interface{}) ([]api.Command,error) {
 	}
 }
 
-func (c *channel) Run(data map[string]interface{}) {
+func (c *channel) Run(data interface{}) {
 	var cmd api.Command
 	cmd.Session = 0
-	dat,_ := json.Marshal(data)
-	jsonpb.UnmarshalString(string(dat), &cmd)
+	dat := makeBody(data)
 	cmd.Channel = c.id
-
-	ndata := cmd.String()
+	cmd.Body = dat
+	ndata,_ := proto.Marshal(&cmd)
 	websocket.Message.Send(c.ws,ndata)
 
 }
 
-func (c *channel) GetOutput(data map[string]interface{}) (string, error){
+func (c *channel) GetOutput(data interface{}) (string, error){
 	got, err := c.Send(data)
-	if err != nil{
+	if err == nil{
 		s := ""
 		for _,res := range got{
 			s = s + res.GetOutput()
@@ -138,7 +177,7 @@ func (c *Client) Init(token,repl,url string) error{
 	c.Repl = repl
 	c.URL = url
 	var err error
-	c.ws, err = websocket.Dial(c.URL, "", "")
+	c.ws, err = websocket.Dial(c.URL, "", "https://example.com")
 	if err!= nil{
 		return err
 	}
@@ -151,21 +190,24 @@ func (c *Client) Open(service, name string) channel{
 	var cmd api.Command
 	cmd.Channel = 0
 	cmd.Session = 0
-	cmd.GetOpenChan().Service = service
-	cmd.GetOpenChan().Name = name
-	cmd.GetOpenChan().Action = 0
+	var oc api.OpenChannel
+	oc.Service = service
+	oc.Name = name
+	oc.Id = 0
+	cmd.Body = &api.Command_OpenChan{OpenChan : &oc} 
 	cmd.Ref = base36.Encode(uint64(rand.Float32() * float32(math.Pow(10,16))))
 
-	data := cmd.String()
+	data,_ := proto.Marshal(&cmd)
 	websocket.Message.Send(c.ws, data)
-	res := cmd.GetOpenChanRes()
+	res := &api.OpenChannelRes{}
 	for{		
 		var data []byte
 		websocket.Message.Receive(c.ws, &data)
 		proto.Unmarshal(data, res)
 		if res.Id > 0{ break }
+		
 	}
-	
+	fmt.Println("here")
 	c.channels = append(c.channels, res.Id)
 
 	return channel{id : res.Id, service : service, name : name, ws : c.ws}

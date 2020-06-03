@@ -1,5 +1,5 @@
-github.com/LordPos/protocol-go v0.0.0-20200524173203-49dff39ce36b h1:Kj0e4t5Awp9nJsPEGKB0g09CE7pYSzFtNyC9uci1D+Y=
-github.com/LordPos/protocol-go v0.0.0-20200524173203-49dff39ce36b/go.mod h1:24XCz3sHUuAe+a/rLToVhFyuAZpAiDezxbfdCI5RmmE=
+github.com/LordPos/protocol-go v0.0.0-20200603171735-385d669b6ede h1:cOsTgB/Hn57VduuSUpXDGKWtPSLyanrjwy/LVTW/ILc=
+github.com/LordPos/protocol-go v0.0.0-20200603171735-385d669b6ede/go.mod h1:24XCz3sHUuAe+a/rLToVhFyuAZpAiDezxbfdCI5RmmE=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/golang/protobuf v1.3.2/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
