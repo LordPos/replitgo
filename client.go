@@ -20,11 +20,11 @@ type channel struct {
 	ws *websocket.Conn
 }
 
-func (c *channel) Send(data interface{}) ([]api.Command,error) {
+func (c *channel) send(data api.IsCommand_Body) ([]api.Command,error) {
 	var cmd api.Command
 	cmd.Session = 0
 	cmd.Channel = c.id
-	cmd.Body = makeBody(data)
+	cmd.Body = data
 	ndata,_ := proto.Marshal(&cmd)
 	websocket.Message.Send(c.ws,ndata)
 	fmt.Println(" ")
@@ -37,11 +37,12 @@ func (c *channel) Send(data interface{}) ([]api.Command,error) {
 		if res.Channel == c.id {
 			got = append(got, res)
 		}
-		if res.GetState() == 0{
+		if res.GetState() == 0 && res.Session > 0{
 			break
 		}
 
 	}
+	fmt.Println(res)
 	if res.GetError() == "" {
 		return got, nil
 	} else {
@@ -49,19 +50,18 @@ func (c *channel) Send(data interface{}) ([]api.Command,error) {
 	}
 }
 
-func (c *channel) Run(data interface{}) {
+func (c *channel) run(data api.IsCommand_Body) {
 	var cmd api.Command
 	cmd.Session = 0
-	dat := makeBody(data)
 	cmd.Channel = c.id
-	cmd.Body = dat
+	cmd.Body = data
 	ndata,_ := proto.Marshal(&cmd)
 	websocket.Message.Send(c.ws,ndata)
 
 }
 
-func (c *channel) GetOutput(data interface{}) (string, error){
-	got, err := c.Send(data)
+func (c *channel) getOutput(data api.IsCommand_Body) (string, error){
+	got, err := c.send(data)
 	if err == nil{
 		s := ""
 		for _,res := range got{
@@ -72,11 +72,7 @@ func (c *channel) GetOutput(data interface{}) (string, error){
 		return "", err
 	}
 }
-//Implement this later
-func (c *channel) GetJSON(data map[string]interface{}) {//([]map[string]interface{}, error){
-	return
 
-}
 
 type Client struct{
 	Token string
@@ -86,12 +82,13 @@ type Client struct{
 	channels []int32
 }
 
+// Init initializes connection to the api server (eval.repl.it)
 func (c *Client) Init(token,repl,url string) error{
 	c.Token = token
 	c.Repl = repl
 	c.URL = url
 	var err error
-	c.ws, err = websocket.Dial(c.URL, "", "https://example.com")
+	c.ws, err = websocket.Dial(c.URL, "", "https://localhost/")
 	if err!= nil{
 		return err
 	}
@@ -100,6 +97,7 @@ func (c *Client) Init(token,repl,url string) error{
 	return nil
 }
 
+// Open returns a new channel, returns it.
 func (c *Client) Open(service, name string) channel{
 	var cmd api.Command
 	cmd.Channel = 0
@@ -127,6 +125,7 @@ func (c *Client) Open(service, name string) channel{
 
 }
 
+// Close terminates the websocket connection to the server
 func (c *Client) Close(){
 	for channel := range c.channels{
 		var cmd api.Command
