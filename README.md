@@ -18,9 +18,9 @@ func main(){
 	key := "key goes here"
 	j,_ := replitgo.GetJSON("user_name without the @","repl name")
 	id,_ := j["id"].(string) 
-    token, _ := replitgo.GetToken(id,key)
-    var client replitgo.Client
-    url := replitgo.GetURL(token, "eval.repl.it","80", false)
+	token, _ := replitgo.GetToken(id,key)
+	var client replitgo.Client
+	url := replitgo.GetURL(token, "eval.repl.it","80", false)
 	client.Init(token, "w3", url)
 	channel := client.Open("exec","execer")
 	reader := bufio.NewReader(os.Stdin)
